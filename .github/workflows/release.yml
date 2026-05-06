@@ -14,24 +14,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, windows-latest, ubuntu-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
 
       - name: Import Apple Developer Certificate
-        if: matrix.os == 'macos-14' && env.APPLE_CERTIFICATE != ''
+        if: matrix.os == 'macos-latest' && env.APPLE_CERTIFICATE != ''
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -50,7 +48,7 @@ jobs:
           echo "CSC_KEY_PASSWORD=$APPLE_CERTIFICATE_PASSWORD" >> $GITHUB_ENV
 
       - name: Build & publish (macOS)
-        if: matrix.os == 'macos-14'
+        if: matrix.os == 'macos-latest'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
