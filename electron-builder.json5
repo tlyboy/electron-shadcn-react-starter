@@ -8,9 +8,27 @@
     output: 'release/${version}',
   },
   files: ['dist', 'dist-electron'],
+  publish: {
+    provider: 'github',
+    // tlyboy 用户名 90 天回收前临时占位为 tlyboys，回收后改回 tlyboy 并同步 git remote
+    owner: 'tlyboys',
+    repo: 'electron-shadcn-react-starter',
+    releaseType: 'draft',
+  },
   mac: {
-    target: ['dmg'],
-    artifactName: '${productName}-Mac-${version}-Installer.${ext}',
+    target: [
+      { target: 'dmg', arch: ['arm64', 'x64'] },
+      // macOS auto-update 必须有 zip 产物
+      { target: 'zip', arch: ['arm64', 'x64'] },
+    ],
+    category: 'public.app-category.developer-tools',
+    hardenedRuntime: true,
+    gatekeeperAssess: false,
+    entitlements: 'build/entitlements.mac.plist',
+    entitlementsInherit: 'build/entitlements.mac.inherit.plist',
+    // 本地不公证；CI 通过 --config.mac.notarize.teamId=$APPLE_TEAM_ID 注入
+    notarize: false,
+    artifactName: '${productName}-Mac-${version}-${arch}-Installer.${ext}',
   },
   win: {
     target: [
@@ -26,12 +44,13 @@
     perMachine: false,
     allowToChangeInstallationDirectory: true,
     deleteAppDataOnUninstall: false,
-    installerIcon: 'icons/icon.ico',
+    installerIcon: 'build/icon.ico',
     installerLanguages: ['zh_CN', 'en_US'],
     displayLanguageSelector: true,
   },
   linux: {
     target: ['AppImage'],
-    artifactName: '${productName}-Linux-${version}.${ext}',
+    category: 'Development',
+    artifactName: '${productName}-Linux-${version}-${arch}.${ext}',
   },
 }
