@@ -5,6 +5,7 @@
   "description": "Electron shadcn react starter",
   "author": "tlyboy",
   "type": "module",
+  "packageManager": "pnpm@10.33.2",
   "main": "dist-electron/main.js",
   "scripts": {
     "build": "tsc && vite build && electron-builder",
