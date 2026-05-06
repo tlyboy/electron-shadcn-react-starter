@@ -31,30 +31,30 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Import Apple Developer Certificate
-        if: matrix.os == 'macos-14' && env.MAC_CERTS != ''
+        if: matrix.os == 'macos-14' && env.APPLE_CERTIFICATE != ''
         env:
-          MAC_CERTS: ${{ secrets.MAC_CERTS }}
-          MAC_CERTS_PASSWORD: ${{ secrets.MAC_CERTS_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          echo "$MAC_CERTS" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          echo "$APPLE_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security set-keychain-settings -t 3600 -u build.keychain
-          security import $RUNNER_TEMP/certificate.p12 -k build.keychain -P "$MAC_CERTS_PASSWORD" -T /usr/bin/codesign
+          security import $RUNNER_TEMP/certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
           CERT_ID=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application" | awk -F'"' '{print $2}')
           echo "CSC_NAME=$CERT_ID" >> $GITHUB_ENV
           echo "CSC_LINK=$RUNNER_TEMP/certificate.p12" >> $GITHUB_ENV
-          echo "CSC_KEY_PASSWORD=$MAC_CERTS_PASSWORD" >> $GITHUB_ENV
+          echo "CSC_KEY_PASSWORD=$APPLE_CERTIFICATE_PASSWORD" >> $GITHUB_ENV
 
       - name: Build & publish (macOS)
         if: matrix.os == 'macos-14'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           pnpm exec tsc
