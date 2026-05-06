@@ -1,4 +1,8 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
+import electronUpdater from 'electron-updater'
+import log from 'electron-log/main.js'
+
+const { autoUpdater } = electronUpdater
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
@@ -47,6 +51,31 @@ function createWindow() {
   }
 }
 
+log.initialize()
+log.transports.file.level = 'info'
+autoUpdater.logger = log
+autoUpdater.autoDownload = true
+autoUpdater.autoInstallOnAppQuit = true
+
+function wireAutoUpdater() {
+  const send = (channel: string, payload?: unknown) =>
+    win?.webContents.send(channel, payload)
+
+  autoUpdater.on('checking-for-update', () => send('updater:checking'))
+  autoUpdater.on('update-available', (info) => send('updater:available', info))
+  autoUpdater.on('update-not-available', (info) =>
+    send('updater:not-available', info),
+  )
+  autoUpdater.on('download-progress', (p) => send('updater:progress', p))
+  autoUpdater.on('update-downloaded', (info) =>
+    send('updater:downloaded', info),
+  )
+  autoUpdater.on('error', (err) => send('updater:error', err?.message))
+}
+
+ipcMain.on('updater:quitAndInstall', () => autoUpdater.quitAndInstall())
+ipcMain.handle('app:version', () => app.getVersion())
+
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
@@ -65,4 +94,8 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  createWindow()
+  wireAutoUpdater()
+  if (app.isPackaged) autoUpdater.checkForUpdatesAndNotify()
+})
