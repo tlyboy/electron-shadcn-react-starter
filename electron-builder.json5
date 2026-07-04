@@ -10,8 +10,7 @@
   files: ['dist', 'dist-electron'],
   publish: {
     provider: 'github',
-    // Temporarily reserve the tlyboy username as tlyboys before its 90-day recovery period; after recovery, change it back to tlyboy and sync git remote
-    owner: 'tlyboys',
+    owner: 'tlyboy',
     repo: 'electron-shadcn-react-starter',
     releaseType: 'draft',
   },
