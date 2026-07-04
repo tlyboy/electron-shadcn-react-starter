@@ -10,8 +10,7 @@
   files: ['dist', 'dist-electron'],
   publish: {
     provider: 'github',
-    // tlyboy 用户名 90 天回收前临时占位为 tlyboys，回收后改回 tlyboy 并同步 git remote
-    owner: 'tlyboys',
+    owner: 'tlyboy',
     repo: 'electron-shadcn-react-starter',
     releaseType: 'draft',
   },
