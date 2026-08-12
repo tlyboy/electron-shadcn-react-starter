@@ -26,4 +26,13 @@ export default defineConfig([
       globals: globals.node,
     },
   },
+  {
+    // Keep components pulled from shadcn unchanged; don't modify them just to satisfy lint.
+    // ui/** Exporting buttonVariants and useTheme from theme-provider are both standard shadcn patterns,
+    // and trigger react-refresh/only-export-components; this rule only affects HMR granularity and is not a defect.
+    files: ['src/components/ui/**', 'src/components/theme-provider.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])
