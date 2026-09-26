@@ -25,7 +25,9 @@
     gatekeeperAssess: false,
     entitlements: 'build/entitlements.mac.plist',
     entitlementsInherit: 'build/entitlements.mac.inherit.plist',
-    // 本地不公证；CI 通过 --config.mac.notarize.teamId=$APPLE_TEAM_ID 注入
+    // 本地不公证。CI 里配了 APPLE_TEAM_ID 时用 --config.mac.notarize=true 打开，
+    // 公证所需的 APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID 从环境变量读。
+    // electron-builder 26 起 notarize 只能是布尔值，不能再写成 { teamId }。
     notarize: false,
     artifactName: '${productName}-Mac-${version}-${arch}-Installer.${ext}',
   },
