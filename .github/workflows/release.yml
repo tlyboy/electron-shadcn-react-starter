@@ -58,7 +58,7 @@ jobs:
           pnpm exec tsc
           pnpm exec vite build
           if [ -n "$APPLE_TEAM_ID" ]; then
-            pnpm exec electron-builder --mac --publish always --config.mac.notarize.teamId=$APPLE_TEAM_ID
+            pnpm exec electron-builder --mac --publish always --config.mac.notarize=true
           else
             pnpm exec electron-builder --mac --publish always
           fi

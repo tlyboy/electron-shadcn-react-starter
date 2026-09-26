@@ -17,7 +17,7 @@
   mac: {
     target: [
       { target: 'dmg', arch: ['arm64', 'x64'] },
-      // macOS auto-update requires a zip artifact
+      // macOS auto-updates require a zip artifact
       { target: 'zip', arch: ['arm64', 'x64'] },
     ],
     category: 'public.app-category.developer-tools',
@@ -25,7 +25,9 @@
     gatekeeperAssess: false,
     entitlements: 'build/entitlements.mac.plist',
     entitlementsInherit: 'build/entitlements.mac.inherit.plist',
-    // No local notarization; CI injects via --config.mac.notarize.teamId=$APPLE_TEAM_ID
+    // No notarization locally. Enable it in CI with --config.mac.notarize=true when APPLE_TEAM_ID is set,
+    // and read APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID for notarization from environment variables.
+    // Starting with electron-builder 26, notarize can only be a boolean; it can no longer be written as { teamId }.
     notarize: false,
     artifactName: '${productName}-Mac-${version}-${arch}-Installer.${ext}',
   },
