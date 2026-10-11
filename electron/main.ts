@@ -58,18 +58,13 @@ autoUpdater.autoDownload = true
 autoUpdater.autoInstallOnAppQuit = true
 
 function wireAutoUpdater() {
-  const send = (channel: string, payload?: unknown) =>
-    win?.webContents.send(channel, payload)
+  const send = (channel: string, payload?: unknown) => win?.webContents.send(channel, payload)
 
   autoUpdater.on('checking-for-update', () => send('updater:checking'))
   autoUpdater.on('update-available', (info) => send('updater:available', info))
-  autoUpdater.on('update-not-available', (info) =>
-    send('updater:not-available', info),
-  )
+  autoUpdater.on('update-not-available', (info) => send('updater:not-available', info))
   autoUpdater.on('download-progress', (p) => send('updater:progress', p))
-  autoUpdater.on('update-downloaded', (info) =>
-    send('updater:downloaded', info),
-  )
+  autoUpdater.on('update-downloaded', (info) => send('updater:downloaded', info))
   autoUpdater.on('error', (err) => send('updater:error', err?.message))
 }
 

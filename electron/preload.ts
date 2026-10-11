@@ -34,9 +34,7 @@ const UPDATER_CHANNELS = [
 
 contextBridge.exposeInMainWorld('updater', {
   onStatus(cb: (channel: string, payload: unknown) => void) {
-    UPDATER_CHANNELS.forEach((c) =>
-      ipcRenderer.on(c, (_e, payload) => cb(c, payload)),
-    )
+    UPDATER_CHANNELS.forEach((c) => ipcRenderer.on(c, (_e, payload) => cb(c, payload)))
   },
   quitAndInstall: () => ipcRenderer.send('updater:quitAndInstall'),
   getAppVersion: () => ipcRenderer.invoke('app:version'),

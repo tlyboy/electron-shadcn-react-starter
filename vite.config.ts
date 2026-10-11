@@ -20,11 +20,7 @@ export default defineConfig({
         vite: {
           build: {
             rollupOptions: {
-              external: [
-                'electron-updater',
-                'electron-log',
-                'electron-log/main.js',
-              ],
+              external: ['electron-updater', 'electron-log', 'electron-log/main.js'],
             },
           },
         },
