@@ -5,7 +5,7 @@
 ## Install
 
 ```bash
-npx degit tlyboy/electron-shadcn-react-starter my-project
+npx giget gh:tlyboy/electron-shadcn-react-starter my-project
 ```
 
 ## Usage
