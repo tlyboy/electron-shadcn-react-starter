@@ -19,6 +19,7 @@ function Default({ children }: { children: React.ReactNode }) {
                 href="https://github.com/tlyboy/electron-shadcn-react-starter"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="GitHub"
               />
             }
           >
