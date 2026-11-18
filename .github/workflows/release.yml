@@ -1,82 +1,139 @@
 name: release
 
 on:
+  pull_request:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Upload installers to a draft GitHub Release
+        type: boolean
+        default: false
   push:
     branches:
       - release
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  build:
+    env:
+      RELEASE_BUILD: ${{ github.event_name == 'push' || inputs.publish }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        include:
+          - os: macos-latest
+            platform: darwin
+            arch: arm64,x64
+          - os: windows-latest
+            platform: win32
+            arch: x64
+          - os: ubuntu-26.04
+            platform: linux
+            arch: x64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
 
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      - name: Install Linux packaging tools
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot dpkg rpm
+
       - name: Import Apple Developer Certificate
-        if: matrix.os == 'macos-latest' && env.APPLE_CERTIFICATE != ''
+        if: env.RELEASE_BUILD == 'true' && matrix.platform == 'darwin' && env.APPLE_CERTIFICATE != ''
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          echo "$APPLE_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -t 3600 -u build.keychain
-          security import $RUNNER_TEMP/certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          CERT_ID=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application" | awk -F'"' '{print $2}')
-          echo "CSC_NAME=$CERT_ID" >> $GITHUB_ENV
-          echo "CSC_LINK=$RUNNER_TEMP/certificate.p12" >> $GITHUB_ENV
-          echo "CSC_KEY_PASSWORD=$APPLE_CERTIFICATE_PASSWORD" >> $GITHUB_ENV
+          certificate="$RUNNER_TEMP/certificate.p12"
+          keychain="$RUNNER_TEMP/build.keychain-db"
+          trap 'rm -f "$certificate"' EXIT
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$certificate"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain"
+          security set-keychain-settings -t 3600 -u "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security import "$certificate" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$keychain"
+          identity=$(security find-identity -v -p codesigning "$keychain" | awk '/"Developer ID Application:/ && !id { id = $2 } END { print id }')
+          test -n "$identity"
+          echo "CSC_NAME=$identity" >> "$GITHUB_ENV"
+          echo "CSC_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
 
-      - name: Build & publish (macOS)
-        if: matrix.os == 'macos-latest'
+      - name: Build installers
+        env:
+          APPLE_ID: ${{ env.RELEASE_BUILD == 'true' && matrix.platform == 'darwin' && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ env.RELEASE_BUILD == 'true' && matrix.platform == 'darwin' && secrets.APPLE_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ env.RELEASE_BUILD == 'true' && matrix.platform == 'darwin' && secrets.APPLE_TEAM_ID || '' }}
+        run: pnpm exec electron-forge make --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: installers-${{ matrix.platform }}
+          path: out/make/
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+
+  publish:
+    if: github.event_name == 'push' || inputs.publish
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-publish
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: installers-*
+          path: installers
+
+      - name: Upload installers to a draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          pnpm exec tsc
-          pnpm exec vite build
-          if [ -n "$APPLE_TEAM_ID" ]; then
-            pnpm exec electron-builder --mac --publish always --config.mac.notarize=true
-          else
-            pnpm exec electron-builder --mac --publish always
+          tag=$(node -p "'v' + require('./package.json').version")
+          mapfile -d '' -t assets < <(find installers -type f -print0)
+          test "${#assets[@]}" -gt 0
+
+          tag_ref=$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$tag" \
+            --jq ".[] | select(.ref == \"refs/tags/$tag\") | .ref")
+          if [[ -n "$tag_ref" ]]; then
+            tag_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/refs/tags/$tag" --jq .sha)
+            if [[ "$tag_sha" != "$GITHUB_SHA" ]]; then
+              echo "::error::$tag points to $tag_sha, expected $GITHUB_SHA"
+              exit 1
+            fi
           fi
 
-      - name: Build & publish (Windows)
-        if: matrix.os == 'windows-latest'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          pnpm exec tsc
-          pnpm exec vite build
-          pnpm exec electron-builder --win --publish always
-
-      - name: Build & publish (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          pnpm exec tsc
-          pnpm exec vite build
-          pnpm exec electron-builder --linux --publish always
+          if release=$(gh release view "$tag" --json isDraft,targetCommitish); then
+            if ! jq -e --arg sha "$GITHUB_SHA" '.isDraft and .targetCommitish == $sha' <<< "$release" > /dev/null; then
+              echo "::error::$tag already has a release that is published or targets another commit"
+              exit 1
+            fi
+          else
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --generate-notes
+          fi
+          gh release upload "$tag" "${assets[@]}" --clobber
