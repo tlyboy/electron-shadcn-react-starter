@@ -3,3 +3,6 @@ allowBuilds:
   fs-xattr: true
   macos-alias: true
 nodeLinker: hoisted
+# Keep the RPM spec compatible with rpmbuild 4.20 and newer until the maker ships a fix.
+patchedDependencies:
+  electron-installer-redhat@4.0.0: patches/electron-installer-redhat@4.0.0.patch

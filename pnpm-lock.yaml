@@ -162,6 +162,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  electron-installer-redhat@4.0.0: 3775cb95ad8c15ff3910c01185b89e42f2c710653f23dca62fd0c2be51a3ea69
+
 importers:
 
   .:
@@ -3471,7 +3474,7 @@ snapshots:
       '@electron-forge/maker-base': 8.0.1(supports-color@7.2.0)
       '@electron-forge/shared-types': 8.0.1(supports-color@7.2.0)
     optionalDependencies:
-      electron-installer-redhat: 4.0.0(supports-color@7.2.0)
+      electron-installer-redhat: 4.0.0(patch_hash=3775cb95ad8c15ff3910c01185b89e42f2c710653f23dca62fd0c2be51a3ea69)(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -4556,7 +4559,7 @@ snapshots:
       - supports-color
     optional: true
 
-  electron-installer-redhat@4.0.0(supports-color@7.2.0):
+  electron-installer-redhat@4.0.0(patch_hash=3775cb95ad8c15ff3910c01185b89e42f2c710653f23dca62fd0c2be51a3ea69)(supports-color@7.2.0):
     dependencies:
       '@malept/cross-spawn-promise': 2.0.0
       debug: 4.4.3(supports-color@7.2.0)
