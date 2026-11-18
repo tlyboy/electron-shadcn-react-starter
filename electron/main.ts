@@ -4,20 +4,7 @@ import started from 'electron-squirrel-startup'
 import { updateElectronApp, UpdateSourceType } from 'update-electron-app'
 import path from 'node:path'
 
-if (started) app.quit()
-
-log.initialize()
-log.transports.file.level = 'info'
-
-updateElectronApp({
-  updateSource: {
-    type: UpdateSourceType.ElectronPublicUpdateService,
-    repo: 'tlyboy/electron-shadcn-react-starter',
-  },
-  logger: log,
-})
-
-let win: BrowserWindow | null = null
+import { autoUpdateRepository } from '../package.json'
 
 function windowIcon() {
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -27,15 +14,8 @@ function windowIcon() {
 }
 
 function createWindow() {
-  win = new BrowserWindow({
+  const win = new BrowserWindow({
     icon: windowIcon(),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
-    },
-  })
-
-  win.webContents.on('did-finish-load', () => {
-    win?.webContents.send('main-process-message', new Date().toLocaleString())
   })
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -45,17 +25,30 @@ function createWindow() {
   }
 }
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-    win = null
-  }
-})
+if (started) {
+  app.quit()
+} else {
+  log.initialize()
+  log.transports.file.level = 'info'
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
+  if (autoUpdateRepository && !process.argv.includes('--squirrel-firstrun')) {
+    updateElectronApp({
+      updateSource: {
+        type: UpdateSourceType.ElectronPublicUpdateService,
+        repo: autoUpdateRepository,
+      },
+      logger: log,
+    })
+  }
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit()
+  })
+
+  app.whenReady().then(() => {
     createWindow()
-  }
-})
-
-app.whenReady().then(createWindow)
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+}

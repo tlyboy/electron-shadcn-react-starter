@@ -14,10 +14,11 @@ import { PublisherGitHub } from '@electron-forge/publisher-github'
 import type { ForgeConfig } from '@electron-forge/shared-types'
 import { FuseV1Options, FuseVersion } from '@electron/fuses'
 
-const REPO = {
-  owner: 'tlyboy',
-  name: 'electron-shadcn-react-starter',
-} as const
+import packageJson from './package.json' with { type: 'json' }
+
+const githubRepository = /^https:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/.exec(
+  packageJson.repository.url,
+)
 
 function present(name: string): string | undefined {
   const value = process.env[name]
@@ -51,10 +52,8 @@ function osxSignConfig() {
   if (!identity) return undefined
   return {
     identity,
-    hardenedRuntime: true,
-    gatekeeperAssess: false,
-    entitlements: 'build/entitlements.mac.plist',
-    'entitlements-inherit': 'build/entitlements.mac.inherit.plist',
+    keychain: present('CSC_KEYCHAIN'),
+    continueOnError: false,
   }
 }
 
@@ -67,6 +66,7 @@ function osxNotarizeConfig() {
 }
 
 const windowsCert = windowsCertificate()
+const osxSign = osxSignConfig()
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -75,8 +75,8 @@ const config: ForgeConfig = {
     appBundleId: 'com.tlyboy.electron-shadcn-react-starter',
     appCategoryType: 'public.app-category.developer-tools',
     icon: 'build/icon',
-    osxSign: osxSignConfig(),
-    osxNotarize: osxNotarizeConfig(),
+    osxSign,
+    osxNotarize: osxSign && osxNotarizeConfig(),
     windowsSign: windowsCert,
   },
   rebuildConfig: {},
@@ -100,13 +100,14 @@ const config: ForgeConfig = {
       },
     }),
   ],
-  publishers: [
-    new PublisherGitHub({
-      repository: REPO,
-      draft: true,
-      prerelease: false,
-    }),
-  ],
+  publishers: githubRepository
+    ? [
+        new PublisherGitHub({
+          repository: { owner: githubRepository[1], name: githubRepository[2] },
+          draft: true,
+        }),
+      ]
+    : [],
   plugins: [
     new VitePlugin({
       build: [
@@ -114,11 +115,6 @@ const config: ForgeConfig = {
           entry: 'electron/main.ts',
           config: 'vite.main.config.mts',
           target: 'main',
-        },
-        {
-          entry: 'electron/preload.ts',
-          config: 'vite.preload.config.mts',
-          target: 'preload',
         },
       ],
       renderer: [

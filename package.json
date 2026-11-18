@@ -74,5 +74,6 @@
     "node": "26.x"
   },
   "packageManager": "pnpm@12.16.1",
+  "autoUpdateRepository": "",
   "productName": "Electron shadcn react starter"
 }
