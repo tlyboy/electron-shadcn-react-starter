@@ -6,7 +6,7 @@
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
   },
-  "ignorePatterns": ["dist", "dist-electron", "release"],
+  "ignorePatterns": ["dist", "dist-electron", "release", ".vite", "out"],
   "overrides": [
     {
       // Keep components pulled from shadcn unchanged; don't modify them just to satisfy lint.

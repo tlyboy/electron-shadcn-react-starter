@@ -10,6 +10,8 @@
     "dist",
     "dist-electron",
     "release",
+    ".vite",
+    "out",
     "pnpm-lock.yaml",
     "auto-imports.d.ts",
     "components.d.ts",

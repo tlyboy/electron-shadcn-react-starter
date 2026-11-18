@@ -1,6 +1,5 @@
 import { ipcRenderer, contextBridge } from 'electron'
 
-// --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
   on(...args: Parameters<typeof ipcRenderer.on>) {
     const [channel, listener] = args
@@ -18,24 +17,4 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     const [channel, ...omit] = args
     return ipcRenderer.invoke(channel, ...omit)
   },
-
-  // You can expose other APTs you need here.
-  // ...
-})
-
-const UPDATER_CHANNELS = [
-  'updater:checking',
-  'updater:available',
-  'updater:not-available',
-  'updater:progress',
-  'updater:downloaded',
-  'updater:error',
-] as const
-
-contextBridge.exposeInMainWorld('updater', {
-  onStatus(cb: (channel: string, payload: unknown) => void) {
-    UPDATER_CHANNELS.forEach((c) => ipcRenderer.on(c, (_e, payload) => cb(c, payload)))
-  },
-  quitAndInstall: () => ipcRenderer.send('updater:quitAndInstall'),
-  getAppVersion: () => ipcRenderer.invoke('app:version'),
 })

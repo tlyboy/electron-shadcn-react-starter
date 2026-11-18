@@ -21,10 +21,12 @@
     "types": ["vite/client"],
     "verbatimModuleSyntax": true
   },
-  "include": ["src", "electron"],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
+  "include": [
+    "src",
+    "electron",
+    "forge.config.mts",
+    "vite.main.config.mts",
+    "vite.preload.config.mts",
+    "vite.renderer.config.mts"
   ]
 }
