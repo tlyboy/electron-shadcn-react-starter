@@ -23,7 +23,7 @@ pnpm make
 
 ### Releases
 
-Pull requests build installers for all three platforms. The release workflow runs on pushes to the `release` branch or by manual dispatch. It collects the installers into one draft GitHub Release for the version in `package.json` and ties the draft to the commit that built them.
+Pull requests build installers for all three platforms. Push to the `release` branch or enable `publish` when running the workflow manually to collect the installers into a draft GitHub Release. The draft uses the version in `package.json` and points to the commit that built the installers.
 
 For a local release, set `repository.url` in `package.json` to your GitHub repository, push the matching `v<version>` tag for the commit you are building, and run `pnpm release` with `GITHUB_TOKEN` set. `pnpm run publish` is an alias for `pnpm release`.
 

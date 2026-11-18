@@ -23,7 +23,7 @@ pnpm make
 
 ### 发布
 
-PR 会构建三个平台的安装包。发布工作流由推送到 `release` 分支或手动运行触发，按照 `package.json` 的版本汇总安装包到同一个 GitHub Release 草稿，并将草稿绑定到构建提交。
+PR 会构建三个平台的安装包。推送到 `release` 分支，或手动运行工作流时启用 `publish`，会把安装包汇总到同一个 GitHub Release 草稿。草稿使用 `package.json` 中的版本，并指向打包所用的提交。
 
 本地发布时，先把 `package.json` 的 `repository.url` 改为自己的 GitHub 仓库，为构建提交创建并推送对应的 `v<version>` 标签，然后设置 `GITHUB_TOKEN` 并运行 `pnpm release`。`pnpm run publish` 是 `pnpm release` 的别名。
 
