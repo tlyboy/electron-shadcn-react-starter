@@ -29,7 +29,8 @@ jobs:
           - os: windows-latest
             platform: win32
             arch: x64
-          - os: ubuntu-latest
+          # The current RPM maker requires rpmbuild older than 4.20.
+          - os: ubuntu-24.04
             platform: linux
             arch: x64
     runs-on: ${{ matrix.os }}

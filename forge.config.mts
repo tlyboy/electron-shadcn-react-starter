@@ -86,7 +86,7 @@ const config: ForgeConfig = {
       ...windowsCert,
     }),
     new MakerZIP({}, ['darwin']),
-    new MakerDMG({ icon: 'build/icon.icns' }, ['darwin']),
+    new MakerDMG({ icon: 'build/icon.icns', title: 'Electron shadcn starter' }, ['darwin']),
     new MakerDeb({
       options: {
         icon: 'build/icon.png',
